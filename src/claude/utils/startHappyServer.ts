@@ -16,6 +16,8 @@ import { readFile, writeFile } from "fs/promises";
 import { exec } from "child_process";
 import { promisify } from "util";
 
+const execAsync = promisify(exec);
+
 export async function startHappyServer(client: ApiSessionClient) {
     // Handler that sends title updates via the client
     const handler = async (title: string) => {
@@ -45,7 +47,6 @@ export async function startHappyServer(client: ApiSessionClient) {
     });
 
     mcp.registerTool('change_title', {
-        description: 'Change the title of the current chat session (OpenCode compatible)',
         title: 'Change Chat Title',
         keywords: ['chat', 'session', 'title', 'rename', 'opencode'],
         inputSchema: {
@@ -60,7 +61,7 @@ export async function startHappyServer(client: ApiSessionClient) {
             },
             required: ['title']
         },
-    }, async (args) => {
+    } as any, async (args) => {
         const response = await handler(args.title);
         logger.debug('[happyMCP] Response:', response);
 
@@ -102,7 +103,6 @@ export async function startHappyServer(client: ApiSessionClient) {
 
     // Happy session info tool
     mcp.registerTool('happy_session_info', {
-        description: 'Get current Happy session information including mobile connection status and metadata',
         title: 'Get Happy Session Info',
         keywords: ['session', 'info', 'status', 'happy', 'mobile', 'opencode'],
         inputSchema: {
@@ -110,13 +110,13 @@ export async function startHappyServer(client: ApiSessionClient) {
             properties: {},
             required: []
         },
-    }, async (args) => {
+    } as any, async (args) => {
         try {
             const sessionInfo = {
                 sessionId: client.sessionId,
-                isConnected: client.isConnected(),
+                isConnected: client.socket.connected,
                 connectionType: 'websocket',
-                mobileConnected: client.hasActiveMobileConnection?.() || false,
+                mobileConnected: false, // TODO: Implement mobile connection detection
                 provider: 'happy',
                 capabilities: [
                     'mobile_control',
@@ -166,7 +166,6 @@ export async function startHappyServer(client: ApiSessionClient) {
 
     // Mobile connection QR code tool
     mcp.registerTool('happy_mobile_connect', {
-        description: 'Generate QR code for mobile app connection or return connection status',
         title: 'Connect Mobile App',
         keywords: ['mobile', 'qr', 'connect', 'auth', 'opencode'],
         inputSchema: {
@@ -181,15 +180,15 @@ export async function startHappyServer(client: ApiSessionClient) {
             },
             required: []
         },
-    }, async (args) => {
+    } as any, async (args) => {
         try {
             const action = args.action || 'status';
 
             if (action === 'status') {
                 const status = {
-                    mobileConnected: client.hasActiveMobileConnection?.() || false,
+                    mobileConnected: false, // TODO: Implement mobile connection detection
                     qrAvailable: true,
-                    connectionUrl: client.getQrCodeUrl?.() || null,
+                    connectionUrl: null, // TODO: Implement QR code URL generation
                     instructions: [
                         '1. Install Happy mobile app',
                         '2. Scan QR code in app',
@@ -215,8 +214,8 @@ export async function startHappyServer(client: ApiSessionClient) {
                 };
             } else if (action === 'generate_qr') {
                 // Generate QR code for mobile connection
-                const qrData = client.generateQrCode?.() || {
-                    qrCode: 'Sample QR code data',
+                const qrData = {
+                    qrCode: 'Sample QR code data', // TODO: Implement QR code generation
                     expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString()
                 };
 
@@ -260,7 +259,6 @@ export async function startHappyServer(client: ApiSessionClient) {
 
     // File access tool with permission checks
     mcp.registerTool('happy_file_access', {
-        description: 'Access project files with Happy permission system integration',
         title: 'Access Project Files',
         keywords: ['file', 'read', 'write', 'access', 'permissions', 'opencode'],
         inputSchema: {
@@ -285,7 +283,7 @@ export async function startHappyServer(client: ApiSessionClient) {
             },
             required: ['path', 'operation']
         },
-    }, async (args) => {
+    } as any, async (args) => {
         try {
             const { path, operation, content } = args;
 
@@ -421,7 +419,6 @@ export async function startHappyServer(client: ApiSessionClient) {
 
     // OpenCode discovery and compatibility tool
     mcp.registerTool('happy_opencode_discovery', {
-        description: 'OpenCode discovery tool with provider information and compatibility metadata',
         title: 'OpenCode Discovery',
         keywords: ['opencode', 'discovery', 'provider', 'compatibility', 'info'],
         inputSchema: {
@@ -435,7 +432,7 @@ export async function startHappyServer(client: ApiSessionClient) {
             },
             required: []
         },
-    }, async (args) => {
+    } as any, async (args) => {
         try {
             const includeAdvanced = args.includeAdvanced || false;
 

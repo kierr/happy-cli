@@ -190,7 +190,6 @@ export function generateHappyOptimizedConfig(options: ConfigGeneratorOptions = {
         description: 'Happy-optimized OpenCode configuration with mobile control and enhanced MCP features',
         happy: {
             ...config.happy,
-            optimizedForOpenCode: true,
             advancedFeatures: {
                 realTimeSync: true,
                 mobileNotifications: true,

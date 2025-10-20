@@ -375,13 +375,18 @@ async function handleOpenCodeTest(args: string[]): Promise<void> {
 
 async function testMcpServerConnectivity(mcpUrl: string): Promise<void> {
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
     const response = await fetch(mcpUrl, {
       method: 'GET',
-      timeout: 5000,
+      signal: controller.signal,
       headers: {
         'Accept': 'application/json'
       }
     });
+
+    clearTimeout(timeoutId);
 
     if (response.ok) {
       console.log(chalk.green('✓ MCP server is reachable'));
@@ -396,13 +401,18 @@ async function testMcpServerConnectivity(mcpUrl: string): Promise<void> {
 
 async function testOpenCodeApiConnectivity(apiUrl: string): Promise<void> {
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+
     const response = await fetch(`${apiUrl}/health`, {
       method: 'GET',
-      timeout: 10000,
+      signal: controller.signal,
       headers: {
         'Accept': 'application/json'
       }
     });
+
+    clearTimeout(timeoutId);
 
     if (response.ok) {
       console.log(chalk.green('✓ OpenCode API is reachable'));
