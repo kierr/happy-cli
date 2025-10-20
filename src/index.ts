@@ -25,6 +25,7 @@ import { runDoctorCommand } from './ui/doctor'
 import { listDaemonSessions, stopDaemonSession } from './daemon/controlClient'
 import { handleAuthCommand } from './commands/auth'
 import { handleConnectCommand } from './commands/connect'
+import { handleOpenCodeCommand } from './commands/opencode'
 import { spawnHappyCLI } from './utils/spawnHappyCLI'
 import { claudeCliPath } from './claude/claudeLocal'
 import { execFileSync } from 'node:child_process'
@@ -69,6 +70,18 @@ import { execFileSync } from 'node:child_process'
     // Handle connect subcommands
     try {
       await handleConnectCommand(args.slice(1));
+    } catch (error) {
+      console.error(chalk.red('Error:'), error instanceof Error ? error.message : 'Unknown error')
+      if (process.env.DEBUG) {
+        console.error(error)
+      }
+      process.exit(1)
+    }
+    return;
+  } else if (subcommand === 'opencode') {
+    // Handle opencode subcommands
+    try {
+      await handleOpenCodeCommand(args.slice(1));
     } catch (error) {
       console.error(chalk.red('Error:'), error instanceof Error ? error.message : 'Unknown error')
       if (process.env.DEBUG) {
@@ -296,6 +309,7 @@ ${chalk.bold('Usage:')}
   happy auth              Manage authentication
   happy codex             Start Codex mode
   happy connect           Connect AI vendor API keys
+  happy opencode          Manage OpenCode integration setup
   happy notify            Send push notification
   happy daemon            Manage background service that allows
                             to spawn new sessions away from your computer
@@ -303,9 +317,10 @@ ${chalk.bold('Usage:')}
 
 ${chalk.bold('Examples:')}
   happy                    Start session
-  happy --yolo             Start with bypassing permissions 
+  happy --yolo             Start with bypassing permissions
                             happy sugar for --dangerously-skip-permissions
   happy auth login --force Authenticate
+  happy opencode setup     Configure OpenCode integration
   happy doctor             Run diagnostics
 
 ${chalk.bold('Happy supports ALL Claude options!')}
