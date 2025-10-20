@@ -81,7 +81,7 @@ import { execFileSync } from 'node:child_process'
     // Handle codex command
     try {
       const { runCodex } = await import('@/codex/runCodex');
-      
+
       // Parse startedBy argument
       let startedBy: 'daemon' | 'terminal' | undefined = undefined;
       for (let i = 1; i < args.length; i++) {
@@ -89,11 +89,37 @@ import { execFileSync } from 'node:child_process'
           startedBy = args[++i] as 'daemon' | 'terminal';
         }
       }
-      
+
       const {
         credentials
       } = await authAndSetupMachineIfNeeded();
       await runCodex({credentials, startedBy});
+      // Do not force exit here; allow instrumentation to show lingering handles
+    } catch (error) {
+      console.error(chalk.red('Error:'), error instanceof Error ? error.message : 'Unknown error')
+      if (process.env.DEBUG) {
+        console.error(error)
+      }
+      process.exit(1)
+    }
+    return;
+  } else if (subcommand === 'opencode-start') {
+    // Handle opencode-start command
+    try {
+      const { runOpenCode } = await import('@/opencode/runOpenCode');
+
+      // Parse startedBy argument
+      let startedBy: 'daemon' | 'terminal' | undefined = undefined;
+      for (let i = 1; i < args.length; i++) {
+        if (args[i] === '--started-by') {
+          startedBy = args[++i] as 'daemon' | 'terminal';
+        }
+      }
+
+      const {
+        credentials
+      } = await authAndSetupMachineIfNeeded();
+      await runOpenCode({credentials, startedBy});
       // Do not force exit here; allow instrumentation to show lingering handles
     } catch (error) {
       console.error(chalk.red('Error:'), error instanceof Error ? error.message : 'Unknown error')
@@ -295,6 +321,7 @@ ${chalk.bold('Usage:')}
   happy [options]         Start Claude with mobile control
   happy auth              Manage authentication
   happy codex             Start Codex mode
+  happy opencode-start     Start OpenCode mode
   happy connect           Connect AI vendor API keys
   happy notify            Send push notification
   happy daemon            Manage background service that allows
@@ -303,9 +330,10 @@ ${chalk.bold('Usage:')}
 
 ${chalk.bold('Examples:')}
   happy                    Start session
-  happy --yolo             Start with bypassing permissions 
+  happy --yolo             Start with bypassing permissions
                             happy sugar for --dangerously-skip-permissions
   happy auth login --force Authenticate
+  happy opencode-start     Start OpenCode session
   happy doctor             Run diagnostics
 
 ${chalk.bold('Happy supports ALL Claude options!')}

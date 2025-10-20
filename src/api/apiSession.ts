@@ -239,6 +239,24 @@ export class ApiSessionClient extends EventEmitter {
         });
     }
 
+    sendOpenCodeMessage(body: any) {
+        let content = {
+            role: 'agent',
+            content: {
+                type: 'opencode',
+                data: body  // This wraps the entire OpenCode message
+            },
+            meta: {
+                sentFrom: 'cli'
+            }
+        };
+        const encrypted = encodeBase64(encrypt(this.encryptionKey, this.encryptionVariant, content));
+        this.socket.emit('message', {
+            sid: this.sessionId,
+            message: encrypted
+        });
+    }
+
     sendSessionEvent(event: {
         type: 'switch', mode: 'local' | 'remote'
     } | {
