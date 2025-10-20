@@ -25,7 +25,6 @@ import { runDoctorCommand } from './ui/doctor'
 import { listDaemonSessions, stopDaemonSession } from './daemon/controlClient'
 import { handleAuthCommand } from './commands/auth'
 import { handleConnectCommand } from './commands/connect'
-import { handleOpenCodeCommand } from './commands/opencode'
 import { spawnHappyCLI } from './utils/spawnHappyCLI'
 import { claudeCliPath } from './claude/claudeLocal'
 import { execFileSync } from 'node:child_process'
@@ -78,10 +77,24 @@ import { execFileSync } from 'node:child_process'
       process.exit(1)
     }
     return;
-  } else if (subcommand === 'opencode') {
-    // Handle opencode subcommands
+  } else if (subcommand === 'codex') {
+    // Handle codex command
     try {
-      await handleOpenCodeCommand(args.slice(1));
+      const { runCodex } = await import('@/codex/runCodex');
+
+      // Parse startedBy argument
+      let startedBy: 'daemon' | 'terminal' | undefined = undefined;
+      for (let i = 1; i < args.length; i++) {
+        if (args[i] === '--started-by') {
+          startedBy = args[++i] as 'daemon' | 'terminal';
+        }
+      }
+
+      const {
+        credentials
+      } = await authAndSetupMachineIfNeeded();
+      await runCodex({credentials, startedBy});
+      // Do not force exit here; allow instrumentation to show lingering handles
     } catch (error) {
       console.error(chalk.red('Error:'), error instanceof Error ? error.message : 'Unknown error')
       if (process.env.DEBUG) {
@@ -90,11 +103,11 @@ import { execFileSync } from 'node:child_process'
       process.exit(1)
     }
     return;
-  } else if (subcommand === 'codex') {
-    // Handle codex command
+  } else if (subcommand === 'opencode-start') {
+    // Handle opencode-start command
     try {
-      const { runCodex } = await import('@/codex/runCodex');
-      
+      const { runOpenCode } = await import('@/opencode/runOpenCode');
+
       // Parse startedBy argument
       let startedBy: 'daemon' | 'terminal' | undefined = undefined;
       for (let i = 1; i < args.length; i++) {
@@ -102,11 +115,11 @@ import { execFileSync } from 'node:child_process'
           startedBy = args[++i] as 'daemon' | 'terminal';
         }
       }
-      
+
       const {
         credentials
       } = await authAndSetupMachineIfNeeded();
-      await runCodex({credentials, startedBy});
+      await runOpenCode({credentials, startedBy});
       // Do not force exit here; allow instrumentation to show lingering handles
     } catch (error) {
       console.error(chalk.red('Error:'), error instanceof Error ? error.message : 'Unknown error')
@@ -308,8 +321,8 @@ ${chalk.bold('Usage:')}
   happy [options]         Start Claude with mobile control
   happy auth              Manage authentication
   happy codex             Start Codex mode
+  happy opencode-start     Start OpenCode mode
   happy connect           Connect AI vendor API keys
-  happy opencode          Manage OpenCode integration setup
   happy notify            Send push notification
   happy daemon            Manage background service that allows
                             to spawn new sessions away from your computer
@@ -320,7 +333,7 @@ ${chalk.bold('Examples:')}
   happy --yolo             Start with bypassing permissions
                             happy sugar for --dangerously-skip-permissions
   happy auth login --force Authenticate
-  happy opencode setup     Configure OpenCode integration
+  happy opencode-start     Start OpenCode session
   happy doctor             Run diagnostics
 
 ${chalk.bold('Happy supports ALL Claude options!')}
